@@ -8,18 +8,34 @@ Usage   - Free for everyone.
 -----------------------------------------------------------------------------------------
 I've used [John Gietzen] answer from this stackoverflow page [https://stackoverflow.com/questions/1483928/how-to-read-the-color-of-a-screen-pixel]. Thanks John!
 */
+
+
+
+
+
+
 using System;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using Utilities;
+using System.Collections.Generic;
+
 namespace exhibit
 {
     public partial class frmMain : Form
     {
+        private bool showNotification = false;
+        private List<Keys> C1 = new List<Keys> { };
+        int count = 0;
+        private globalKeyboardHook gkh = new globalKeyboardHook();
+
         private bool mouseMoveTimer = false;
-        
-        Bitmap screenPixel = new Bitmap(1, 1, PixelFormat.Format32bppArgb);
+
+        private Bitmap screenPixel = new Bitmap(1, 1, PixelFormat.Format32bppArgb);
+
+        private Combination Combinaison;
 
         [DllImport("user32.dll")]
         static extern bool GetCursorPos(ref Point lpPoint);
@@ -44,19 +60,31 @@ namespace exhibit
                     gsrc.ReleaseHdc();
                 }
             }
-
             return screenPixel.GetPixel(0, 0);
         }
-        
+
         private void frmMain_Load(object sender, EventArgs e)
         {
+            List<Keys> C1 = new List<Keys> { Keys.LControlKey, Keys.Space };
+            Combinaison = new Combination(C1, ConsoleLog);
+
+            notifyIcon1.BalloonTipIcon = ToolTipIcon.Info;
+            notifyIcon1.BalloonTipText = "Exhibit is running.";
+            notifyIcon1.BalloonTipTitle = "Exhibit";
+            notifyIcon1.Icon = SystemIcons.Application;
+
+            notifyIcon1.ShowBalloonTip(1000);
 
         }
-
-        private void button1_Click(object sender, EventArgs e)
+        public void ConsoleLog(List<Keys> keys)
         {
+
+            Console.WriteLine("Keys are press :" + keys.ToString());
             if (!mouseMoveTimer)
             {
+                this.Focus();
+                this.Show();
+                this.WindowState = FormWindowState.Normal;
                 MouseMoveTimer.Start();
                 mouseMoveTimer = true;
             }
@@ -64,23 +92,32 @@ namespace exhibit
             {
                 MouseMoveTimer.Stop();
                 mouseMoveTimer = false;
+                if (showNotification)
+                {
+                    notifyIcon1.BalloonTipTitle = "Exhibit";
+                    notifyIcon1.BalloonTipText = "Last color is: " + textBox1.Text;
+                    notifyIcon1.BalloonTipIcon = System.Windows.Forms.ToolTipIcon.Info;
+                    notifyIcon1.Icon = SystemIcons.Application;
+                    notifyIcon1.ShowBalloonTip(1000);
+                }
 
             }
         }
-        private static string HexConverter(Color c)
+
+        private void button1_Click(object sender, EventArgs e)
         {
-            return String.Format("{0:X6}", c.ToArgb() & 0x00FFFFFF);
-            
+            ConsoleLog(C1);
         }
 
         private void MouseMoveTimer_Tick_1(object sender, EventArgs e)
         {
+
             Point cursor = new Point();
             GetCursorPos(ref cursor);
-
             var c = GetColorAt(cursor);
-            
             textBox1.Text = NameOfColorHSV(c);
+
+
 
         }
         #region RGB
@@ -96,8 +133,8 @@ namespace exhibit
             //http://www.workwithcolor.com/orange-brown-color-hue-range-01.htm
 
             //The result that will be returned.
-            string colorName = null;            
-            
+            string colorName = null;
+
             //Pink-Red
             if ((c.R <= 255 && c.R >= 101) && (c.G <= 193 && c.G >= 0) && (c.B <= 204 && c.B >= 11))
             {
@@ -218,21 +255,28 @@ namespace exhibit
             int max = Math.Max(c.R, Math.Max(c.G, c.B));
             int min = Math.Min(c.R, Math.Min(c.G, c.B));
 
-            var Hue = Math.Round(c.GetHue(), 2);
+            var Hue = Math.Round(c.GetHue());
             var Saturation = ((max == 0) ? 0 : 1d - (1d * min / max)) * 100;
-            Saturation = Math.Round(Saturation, 2);
-            var Value = Math.Round(((max / 255d) * 100), 2);
+            Saturation = Math.Round(Saturation);
+            var Value = Math.Round(((max / 255d) * 100));
 
             //The HSV model distributes colors in a 360(DEGREE) circle where all the colors are distributed
             //into a 60(DEGREE) slices. Value and saturation determine the brightness and 
 
+            //Grey
+            if ((Value >= 8 && Value <= 84) & (Saturation <= 15))
+            {
+                colorName = "Grey (" + Hue + "," + Saturation + "," + Value + ")";
+
+            }
             //White
-            if (Value == 100 && Saturation < 5)
+            else if (Value >= 85 && Saturation <= 4)
             {
                 colorName = "White (" + Hue + "," + Saturation + "," + Value + ")";
 
             }
-            else if (Value == 0 && Saturation < 95)
+            //White
+            else if (Value <= 7 && Saturation <= 4)
             {
                 colorName = "Black (" + Hue + "," + Saturation + "," + Value + ")";
 
@@ -244,13 +288,13 @@ namespace exhibit
 
             }
             //Pink
-            else if (Hue >= 331 && Hue <= 345)
+            else if (Hue >= 329 && Hue <= 345)
             {
                 colorName = "Pink (" + Hue + "," + Saturation + "," + Value + ")";
 
             }
             //Magenta-Pink
-            else if (Hue >= 321 && Hue <= 330)
+            else if (Hue >= 321 && Hue <= 328)
             {
                 colorName = "Magenta-Pink (" + Hue + "," + Saturation + "," + Value + ")";
 
@@ -346,5 +390,58 @@ namespace exhibit
         }
         #endregion
 
+        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            System.Diagnostics.Process.Start("https://github.com/tech-chieftain");
+
+        }
+
+        
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            if (showNotification)
+            {
+                showNotification = false;
+            }
+            else
+            {
+                showNotification = false;
+
+
+            }
+
+        }
+
+        private void RunStrip_Click(object sender, EventArgs e)
+        {
+            this.Focus();
+
+            ConsoleLog(C1);
+            this.Show();
+
+        }
+
+        private void Exit_Click(object sender, EventArgs e)
+        {
+            this.Dispose();
+            this.Close();
+
+        }
+
+        private void frmMain_Resize(object sender, EventArgs e)
+        {
+            if (this.WindowState == FormWindowState.Minimized)
+            {
+                Hide();
+                notifyIcon1.Visible = true;
+            }
+        }
+
+        private void notifyIcon1_DoubleClick(object sender, EventArgs e)
+        {
+            Show();
+            this.WindowState = FormWindowState.Normal;
+            notifyIcon1.Visible = false;
+        }
     }
 }
