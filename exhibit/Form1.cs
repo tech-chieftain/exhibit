@@ -8,12 +8,6 @@ Usage   - Free for everyone.
 -----------------------------------------------------------------------------------------
 I've used [John Gietzen] answer from this stackoverflow page [https://stackoverflow.com/questions/1483928/how-to-read-the-color-of-a-screen-pixel]. Thanks John!
 */
-
-
-
-
-
-
 using System;
 using System.Drawing;
 using System.Windows.Forms;
@@ -26,9 +20,9 @@ namespace exhibit
 {
     public partial class frmMain : Form
     {
-        private bool showNotification = false;
+        private bool showNotification = true;
         private List<Keys> C1 = new List<Keys> { };
-        int count = 0;
+        
         private globalKeyboardHook gkh = new globalKeyboardHook();
 
         private bool mouseMoveTimer = false;
@@ -72,7 +66,6 @@ namespace exhibit
             notifyIcon1.BalloonTipText = "Exhibit is running.";
             notifyIcon1.BalloonTipTitle = "Exhibit";
             notifyIcon1.Icon = SystemIcons.Application;
-
             notifyIcon1.ShowBalloonTip(1000);
 
         }
@@ -94,6 +87,7 @@ namespace exhibit
                 mouseMoveTimer = false;
                 if (showNotification)
                 {
+                    notifyIcon1.Visible = true;
                     notifyIcon1.BalloonTipTitle = "Exhibit";
                     notifyIcon1.BalloonTipText = "Last color is: " + textBox1.Text;
                     notifyIcon1.BalloonTipIcon = System.Windows.Forms.ToolTipIcon.Info;
@@ -111,7 +105,7 @@ namespace exhibit
 
         private void MouseMoveTimer_Tick_1(object sender, EventArgs e)
         {
-
+            
             Point cursor = new Point();
             GetCursorPos(ref cursor);
             var c = GetColorAt(cursor);
@@ -405,7 +399,7 @@ namespace exhibit
             }
             else
             {
-                showNotification = false;
+                showNotification = true;
 
 
             }
@@ -415,7 +409,6 @@ namespace exhibit
         private void RunStrip_Click(object sender, EventArgs e)
         {
             this.Focus();
-
             ConsoleLog(C1);
             this.Show();
 
@@ -442,6 +435,11 @@ namespace exhibit
             Show();
             this.WindowState = FormWindowState.Normal;
             notifyIcon1.Visible = false;
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }
